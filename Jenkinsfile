@@ -2,11 +2,11 @@ pipeline {
     agent any
 
     environment {
-        APP_SERVER = "ubuntu@YOUR_EC2_IP"    // Replace with your EC2
+        APP_SERVER = "ubuntu@13.62.127.175"    
         APP_NAME   = "mern-store"
         FRONTEND_DIR = "frontend"
         BACKEND_DIR  = "backend"
-        APP_PORT   = "5000"                  // backend port inside container
+        APP_PORT   = "5000"         
     }
 
     stages {
@@ -35,8 +35,4 @@ pipeline {
         }
 
         stage('Deploy to EC2') {
-            steps {
-                sh """
-                ssh ${APP_SERVER} '
-                    docker rm -f ${APP_NAME} || true
-                    docker rm
+            steps
