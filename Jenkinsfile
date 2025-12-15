@@ -2,12 +2,8 @@ pipeline {
     agent any
 
     environment {
-        APP_SERVER   = "ubuntu@13.62.127.175"   // Application EC2
-        APP_NAME     = "mern-store"
-        FRONTEND_DIR = "frontend"
-        BACKEND_DIR  = "backend"
-        APP_PORT     = "5000"
-        IMAGE_NAME   = "mern-store:latest"
+        IMAGE_NAME = "mern-store:latest"
+        APP_SERVER = "ubuntu@172.31.18.35"
     }
 
     stages {
@@ -19,7 +15,7 @@ pipeline {
             }
         }
 
-        stage('Install Dependencies & Build Frontend') {
+        stage('Install & Build Frontend') {
             steps {
                 sh '''
                 cd frontend
@@ -32,7 +28,7 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 sh '''
-                docker build -t ${IMAGE_NAME} -f backend/Dockerfile backend
+                docker build -t ${IMAGE_NAME} -f backend/Dockerfile .
                 '''
             }
         }
@@ -40,13 +36,13 @@ pipeline {
         stage('Deploy to Application EC2') {
             steps {
                 sh '''
-                ssh -o StrictHostKeyChecking=no ${APP_SERVER} << EOF
-                  docker rm -f ${APP_NAME} || true
+                ssh ubuntu@172.31.18.35 "
+                  docker rm -f mern-store || true
                   docker run -d \
-                    --name ${APP_NAME} \
-                    -p ${APP_PORT}:${APP_PORT} \
+                    --name mern-store \
+                    -p 5000:5000 \
                     ${IMAGE_NAME}
-                EOF
+                "
                 '''
             }
         }
