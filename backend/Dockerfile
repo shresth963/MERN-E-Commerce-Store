@@ -6,6 +6,7 @@ COPY . .
 
 RUN npm install
 
+ENV NODE_ENV=production
 EXPOSE 5000
 
-CMD ["npm", "start"]
+CMD ["node", "backend/index.js"]
