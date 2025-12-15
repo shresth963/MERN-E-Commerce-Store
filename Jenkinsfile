@@ -2,19 +2,20 @@ pipeline {
     agent any
 
     environment {
-        APP_SERVER   = "ubuntu@13.62.127.175"
+        APP_SERVER   = "ubuntu@13.62.127.175"   // Application EC2
         APP_NAME     = "mern-store"
         FRONTEND_DIR = "frontend"
         BACKEND_DIR  = "backend"
         APP_PORT     = "5000"
+        IMAGE_NAME   = "mern-store:latest"
     }
 
     stages {
 
         stage('Checkout') {
             steps {
-                git url: 'https://github.com/shresth963/MERN-E-Commerce-Store.git',
-                    branch: 'main'
+                git branch: 'main',
+                    url: 'https://github.com/shresth963/MERN-E-Commerce-Store.git'
             }
         }
 
@@ -31,21 +32,23 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 sh '''
-                docker build -t mern-store:latest .
+                docker build -t ${IMAGE_NAME} -f backend/Dockerfile backend
                 '''
             }
         }
 
-        stage('Deploy to EC2') {
+        stage('Deploy to Application EC2') {
             steps {
                 sh '''
-                echo "Deploy step placeholder"
-                docker rm -f mern-store || true
-                docker run -d -p 5000:5000 --name mern-store mern-store:latest
+                ssh -o StrictHostKeyChecking=no ${APP_SERVER} << EOF
+                  docker rm -f ${APP_NAME} || true
+                  docker run -d \
+                    --name ${APP_NAME} \
+                    -p ${APP_PORT}:${APP_PORT} \
+                    ${IMAGE_NAME}
+                EOF
                 '''
             }
         }
-
-    } // stages end
-
-} // pipeline end
+    }
+}
