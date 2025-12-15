@@ -6,7 +6,13 @@ pipeline {
         IMAGE_NAME = "mern-store:latest"
         APP_PORT   = "5000"
         APP_DIR    = "/home/ubuntu/mern-app"
-        APP_SERVER = "ubuntu@172.31.18.35"
+
+        // 🔥 UPDATED APPLICATION SERVER
+        APP_SERVER = "ubuntu@16.171.4.146"
+
+        // Mongo
+        DOCKER_NETWORK = "mern-net"
+        MONGO_CONTAINER = "mongo"
     }
 
     stages {
@@ -28,20 +34,28 @@ pipeline {
             }
         }
 
-        stage('Prepare Backend') {
-            steps {
-                sh '''
-                  echo "Frontend build ready"
-                  ls -la frontend/dist
-                '''
-            }
-        }
-
         stage('Copy Code to App Server') {
             steps {
                 sh """
                   ssh ${APP_SERVER} 'rm -rf ${APP_DIR}'
                   rsync -avz --delete ./ ${APP_SERVER}:${APP_DIR}
+                """
+            }
+        }
+
+        stage('Prepare App Server (Docker + Mongo)') {
+            steps {
+                sh """
+                  ssh ${APP_SERVER} '
+                    docker network create ${DOCKER_NETWORK} || true
+
+                    docker rm -f ${MONGO_CONTAINER} || true
+                    docker run -d \
+                      --name ${MONGO_CONTAINER} \
+                      --network ${DOCKER_NETWORK} \
+                      -p 27017:27017 \
+                      mongo:6
+                  '
                 """
             }
         }
@@ -58,14 +72,16 @@ pipeline {
             }
         }
 
-        stage('Run Container') {
+        stage('Run Application Container') {
             steps {
                 sh """
                   ssh ${APP_SERVER} '
                     docker run -d \
                       --name ${APP_NAME} \
+                      --network ${DOCKER_NETWORK} \
                       -p ${APP_PORT}:${APP_PORT} \
                       -e NODE_ENV=production \
+                      -e MONGO_URI=mongodb://mongo:27017/mern_db \
                       ${IMAGE_NAME}
                   '
                 """
