@@ -2,12 +2,16 @@ FROM node:18
 
 WORKDIR /app
 
-COPY . .
-
-WORKDIR /app/backend
+# Install backend dependencies
+COPY backend/package*.json ./
 RUN npm install
 
-ENV NODE_ENV=production
+# Copy backend source
+COPY backend .
+
+# 🔥 COPY FRONTEND BUILD (THIS WAS MISSING)
+COPY frontend/dist frontend/dist
+
 EXPOSE 5000
 
-CMD ["node", "index.js"]
+CMD ["node", "server.js"]
