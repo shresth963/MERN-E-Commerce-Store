@@ -7,11 +7,14 @@ pipeline {
         APP_PORT   = "5000"
         APP_DIR    = "/home/ubuntu/mern-app"
 
-        // 🔥 UPDATED APPLICATION SERVER
+        // App server
         APP_SERVER = "ubuntu@16.171.4.146"
 
+        // SSH key (Jenkins server path)
+        SSH_KEY = "/var/lib/jenkins/y"
+
         // Mongo
-        DOCKER_NETWORK = "mern-net"
+        DOCKER_NETWORK  = "mern-net"
         MONGO_CONTAINER = "mongo"
     }
 
@@ -37,8 +40,8 @@ pipeline {
         stage('Copy Code to App Server') {
             steps {
                 sh """
-                  ssh ${APP_SERVER} 'rm -rf ${APP_DIR}'
-                  rsync -avz --delete ./ ${APP_SERVER}:${APP_DIR}
+                  ssh -i ${SSH_KEY} -o StrictHostKeyChecking=no ${APP_SERVER} "rm -rf ${APP_DIR}"
+                  rsync -avz --delete -e "ssh -i ${SSH_KEY} -o StrictHostKeyChecking=no" ./ ${APP_SERVER}:${APP_DIR}
                 """
             }
         }
@@ -46,7 +49,7 @@ pipeline {
         stage('Prepare App Server (Docker + Mongo)') {
             steps {
                 sh """
-                  ssh ${APP_SERVER} '
+                  ssh -i ${SSH_KEY} -o StrictHostKeyChecking=no ${APP_SERVER} '
                     docker network create ${DOCKER_NETWORK} || true
 
                     docker rm -f ${MONGO_CONTAINER} || true
@@ -63,7 +66,7 @@ pipeline {
         stage('Build Docker Image on App Server') {
             steps {
                 sh """
-                  ssh ${APP_SERVER} '
+                  ssh -i ${SSH_KEY} -o StrictHostKeyChecking=no ${APP_SERVER} '
                     cd ${APP_DIR} &&
                     docker rm -f ${APP_NAME} || true &&
                     docker build -t ${IMAGE_NAME} -f backend/Dockerfile .
@@ -75,7 +78,9 @@ pipeline {
         stage('Run Application Container') {
             steps {
                 sh """
-                  ssh ${APP_SERVER} '
+                  ssh -i ${SSH_KEY} -o StrictHostKeyChecking=no ${APP_SERVER} '
+                    docker rm -f ${APP_NAME} || true
+
                     docker run -d \
                       --name ${APP_NAME} \
                       --network ${DOCKER_NETWORK} \
