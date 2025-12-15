@@ -27,16 +27,19 @@ pipeline {
             }
         }
 
-        stage('Sync Code to Application EC2') {
+        stage('Sync Code (No node_modules)') {
             steps {
                 sh '''
                 ssh ${APP_SERVER} "mkdir -p ${APP_DIR}"
-                rsync -avz --delete ./ ${APP_SERVER}:${APP_DIR}/
+                rsync -avz --delete \
+                  --exclude=node_modules \
+                  --exclude=.git \
+                  ./ ${APP_SERVER}:${APP_DIR}/
                 '''
             }
         }
 
-        stage('Build & Deploy on Application EC2') {
+        stage('Build & Deploy on App EC2') {
             steps {
                 sh '''
                 ssh ${APP_SERVER} "
